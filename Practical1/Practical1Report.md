@@ -1,4 +1,4 @@
-# Practical: End-to-End Tests using Playwright
+# Practical 1: End-to-End Tests using Playwright
 
 This practical demonstrates the implementation of automated end-to-end testing using Playwright for a React-based coding quiz application, including cross-browser testing capabilities.
 
