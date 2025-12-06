@@ -11,8 +11,7 @@ services:
       - SERVICES=s3,iam,logs,sts
       - DEBUG=1
       - DATA_DIR=/tmp/localstack/data
-      - PERSISTENCE=1 
-      - LOCALSTACK_HOST=localhost:4566
+      - PERSISTENCE=1
     volumes:
       - "./localstack-data:/var/lib/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"

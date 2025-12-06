@@ -17,12 +17,29 @@ terraform.tfstate
 terraform.tfstate.backup
 *.tfplan
 
-# LocalStack
+# LocalStack and caches
+localstack-data/
+.trivy-cache/
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Temporary files
+*.tmp
+*.log
+
+# Build artifacts
+build/
+dist/
 localstack-data/
 
 # Trivy
 .trivy-cache/
-reports/
+# Note: reports/ should be committed to show scan results
 
 # OS
 .DS_Store

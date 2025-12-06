@@ -38,10 +38,29 @@ echo ""
 echo -e "${GREEN}Secure Configuration (terraform/):${NC}"
 echo "----------------------------------------"
 if [ -f "$SECURE_REPORT" ]; then
-    SECURE_CRITICAL=$(grep -c "CRITICAL" "$SECURE_REPORT" 2>/dev/null || echo "0")
-    SECURE_HIGH=$(grep -c "HIGH" "$SECURE_REPORT" 2>/dev/null || echo "0")
-    SECURE_MEDIUM=$(grep -c "MEDIUM" "$SECURE_REPORT" 2>/dev/null || echo "0")
-    SECURE_LOW=$(grep -c "LOW" "$SECURE_REPORT" 2>/dev/null || echo "0")
+    # Extract actual failure counts from the "Failures:" line in the output
+    FAILURES_LINE=$(grep "^Failures:" "$SECURE_REPORT" 2>/dev/null || echo "")
+    
+    if [ -n "$FAILURES_LINE" ]; then
+        # Parse the failures line using sed (macOS compatible)
+        SECURE_CRITICAL=$(echo "$FAILURES_LINE" | sed -n 's/.*CRITICAL: \([0-9]*\).*/\1/p' || echo "0")
+        SECURE_HIGH=$(echo "$FAILURES_LINE" | sed -n 's/.*HIGH: \([0-9]*\).*/\1/p' || echo "0")
+        SECURE_MEDIUM=$(echo "$FAILURES_LINE" | sed -n 's/.*MEDIUM: \([0-9]*\).*/\1/p' || echo "0")
+        SECURE_LOW=$(echo "$FAILURES_LINE" | sed -n 's/.*LOW: \([0-9]*\).*/\1/p' || echo "0")
+        
+        # Set to 0 if empty
+        [ -z "$SECURE_CRITICAL" ] && SECURE_CRITICAL=0
+        [ -z "$SECURE_HIGH" ] && SECURE_HIGH=0
+        [ -z "$SECURE_MEDIUM" ] && SECURE_MEDIUM=0
+        [ -z "$SECURE_LOW" ] && SECURE_LOW=0
+    else
+        # Fallback: count actual vulnerability IDs
+        SECURE_CRITICAL=$(grep -E 'AVD-[A-Z]+-[0-9]+ \(CRITICAL\)' "$SECURE_REPORT" 2>/dev/null | wc -l | tr -d ' ')
+        SECURE_HIGH=$(grep -E 'AVD-[A-Z]+-[0-9]+ \(HIGH\)' "$SECURE_REPORT" 2>/dev/null | wc -l | tr -d ' ')
+        SECURE_MEDIUM=$(grep -E 'AVD-[A-Z]+-[0-9]+ \(MEDIUM\)' "$SECURE_REPORT" 2>/dev/null | wc -l | tr -d ' ')
+        SECURE_LOW=$(grep -E 'AVD-[A-Z]+-[0-9]+ \(LOW\)' "$SECURE_REPORT" 2>/dev/null | wc -l | tr -d ' ')
+    fi
+    
     SECURE_TOTAL=$((SECURE_CRITICAL + SECURE_HIGH + SECURE_MEDIUM + SECURE_LOW))
 
     echo -e "  CRITICAL: $SECURE_CRITICAL"
@@ -60,10 +79,29 @@ echo ""
 echo -e "${RED}Insecure Configuration (terraform-insecure/):${NC}"
 echo "----------------------------------------"
 if [ -f "$INSECURE_REPORT" ]; then
-    INSECURE_CRITICAL=$(grep -c "CRITICAL" "$INSECURE_REPORT" 2>/dev/null || echo "0")
-    INSECURE_HIGH=$(grep -c "HIGH" "$INSECURE_REPORT" 2>/dev/null || echo "0")
-    INSECURE_MEDIUM=$(grep -c "MEDIUM" "$INSECURE_REPORT" 2>/dev/null || echo "0")
-    INSECURE_LOW=$(grep -c "LOW" "$INSECURE_REPORT" 2>/dev/null || echo "0")
+    # Extract actual failure counts from the "Failures:" line in the output
+    FAILURES_LINE=$(grep "^Failures:" "$INSECURE_REPORT" 2>/dev/null || echo "")
+    
+    if [ -n "$FAILURES_LINE" ]; then
+        # Parse the failures line using sed (macOS compatible)
+        INSECURE_CRITICAL=$(echo "$FAILURES_LINE" | sed -n 's/.*CRITICAL: \([0-9]*\).*/\1/p' || echo "0")
+        INSECURE_HIGH=$(echo "$FAILURES_LINE" | sed -n 's/.*HIGH: \([0-9]*\).*/\1/p' || echo "0")
+        INSECURE_MEDIUM=$(echo "$FAILURES_LINE" | sed -n 's/.*MEDIUM: \([0-9]*\).*/\1/p' || echo "0")
+        INSECURE_LOW=$(echo "$FAILURES_LINE" | sed -n 's/.*LOW: \([0-9]*\).*/\1/p' || echo "0")
+        
+        # Set to 0 if empty
+        [ -z "$INSECURE_CRITICAL" ] && INSECURE_CRITICAL=0
+        [ -z "$INSECURE_HIGH" ] && INSECURE_HIGH=0
+        [ -z "$INSECURE_MEDIUM" ] && INSECURE_MEDIUM=0
+        [ -z "$INSECURE_LOW" ] && INSECURE_LOW=0
+    else
+        # Fallback: count actual vulnerability IDs
+        INSECURE_CRITICAL=$(grep -E 'AVD-[A-Z]+-[0-9]+ \(CRITICAL\)' "$INSECURE_REPORT" 2>/dev/null | wc -l | tr -d ' ')
+        INSECURE_HIGH=$(grep -E 'AVD-[A-Z]+-[0-9]+ \(HIGH\)' "$INSECURE_REPORT" 2>/dev/null | wc -l | tr -d ' ')
+        INSECURE_MEDIUM=$(grep -E 'AVD-[A-Z]+-[0-9]+ \(MEDIUM\)' "$INSECURE_REPORT" 2>/dev/null | wc -l | tr -d ' ')
+        INSECURE_LOW=$(grep -E 'AVD-[A-Z]+-[0-9]+ \(LOW\)' "$INSECURE_REPORT" 2>/dev/null | wc -l | tr -d ' ')
+    fi
+    
     INSECURE_TOTAL=$((INSECURE_CRITICAL + INSECURE_HIGH + INSECURE_MEDIUM + INSECURE_LOW))
 
     echo -e "  CRITICAL: $INSECURE_CRITICAL"

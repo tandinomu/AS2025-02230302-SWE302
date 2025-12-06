@@ -1,3 +1,21 @@
+# KMS key for customer-managed encryption
+resource "aws_kms_key" "s3_encryption" {
+  description             = "KMS key for S3 bucket encryption"
+  deletion_window_in_days = 10
+  enable_key_rotation     = true
+
+  tags = {
+    Name        = "S3 Encryption Key"
+    Environment = var.environment
+    Project     = var.project_name
+  }
+}
+
+resource "aws_kms_alias" "s3_encryption" {
+  name          = "alias/${var.project_name}-s3-encryption-${var.environment}"
+  target_key_id = aws_kms_key.s3_encryption.key_id
+}
+
 # S3 bucket for deployment (website hosting)
 resource "aws_s3_bucket" "deployment" {
   bucket = "${var.project_name}-deployment-${var.environment}"
@@ -22,14 +40,24 @@ resource "aws_s3_bucket_website_configuration" "deployment" {
   }
 }
 
-# Enable encryption for deployment bucket
+# Enable encryption for deployment bucket with customer-managed KMS key
 resource "aws_s3_bucket_server_side_encryption_configuration" "deployment" {
   bucket = aws_s3_bucket.deployment.id
 
   rule {
     apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
+      sse_algorithm     = "aws:kms"
+      kms_master_key_id = aws_kms_key.s3_encryption.arn
     }
+  }
+}
+
+# Enable versioning for deployment bucket
+resource "aws_s3_bucket_versioning" "deployment" {
+  bucket = aws_s3_bucket.deployment.id
+
+  versioning_configuration {
+    status = "Enabled"
   }
 }
 
@@ -70,6 +98,37 @@ resource "aws_s3_bucket" "logs" {
     Environment = var.environment
     Project     = var.project_name
   }
+}
+
+# Enable encryption for logs bucket with customer-managed KMS key
+resource "aws_s3_bucket_server_side_encryption_configuration" "logs" {
+  bucket = aws_s3_bucket.logs.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm     = "aws:kms"
+      kms_master_key_id = aws_kms_key.s3_encryption.arn
+    }
+  }
+}
+
+# Enable versioning for logs bucket
+resource "aws_s3_bucket_versioning" "logs" {
+  bucket = aws_s3_bucket.logs.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+# Block public access for logs bucket (security best practice)
+resource "aws_s3_bucket_public_access_block" "logs" {
+  bucket = aws_s3_bucket.logs.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
 }
 
 # Enable access logging for deployment bucket

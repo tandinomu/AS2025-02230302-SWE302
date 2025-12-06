@@ -98,10 +98,28 @@ if [ -f "$OUTPUT_FILE" ]; then
     echo -e "${YELLOW}Finding Summary:${NC}"
     echo "----------------------------------------"
 
-    CRITICAL=$(grep -c "CRITICAL" "$OUTPUT_FILE" 2>/dev/null || echo "0")
-    HIGH=$(grep -c "HIGH" "$OUTPUT_FILE" 2>/dev/null || echo "0")
-    MEDIUM=$(grep -c "MEDIUM" "$OUTPUT_FILE" 2>/dev/null || echo "0")
-    LOW=$(grep -c "LOW" "$OUTPUT_FILE" 2>/dev/null || echo "0")
+    # Extract actual failure counts from the "Failures:" line in the output
+    FAILURES_LINE=$(grep "^Failures:" "$OUTPUT_FILE" 2>/dev/null || echo "")
+    
+    if [ -n "$FAILURES_LINE" ]; then
+        # Parse the failures line using sed (macOS compatible)
+        CRITICAL=$(echo "$FAILURES_LINE" | sed -n 's/.*CRITICAL: \([0-9]*\).*/\1/p' || echo "0")
+        HIGH=$(echo "$FAILURES_LINE" | sed -n 's/.*HIGH: \([0-9]*\).*/\1/p' || echo "0")
+        MEDIUM=$(echo "$FAILURES_LINE" | sed -n 's/.*MEDIUM: \([0-9]*\).*/\1/p' || echo "0")
+        LOW=$(echo "$FAILURES_LINE" | sed -n 's/.*LOW: \([0-9]*\).*/\1/p' || echo "0")
+        
+        # Set to 0 if empty
+        [ -z "$CRITICAL" ] && CRITICAL=0
+        [ -z "$HIGH" ] && HIGH=0
+        [ -z "$MEDIUM" ] && MEDIUM=0
+        [ -z "$LOW" ] && LOW=0
+    else
+        # Fallback: count actual vulnerability IDs
+        CRITICAL=$(grep -E 'AVD-[A-Z]+-[0-9]+ \(CRITICAL\)' "$OUTPUT_FILE" 2>/dev/null | wc -l | tr -d ' ')
+        HIGH=$(grep -E 'AVD-[A-Z]+-[0-9]+ \(HIGH\)' "$OUTPUT_FILE" 2>/dev/null | wc -l | tr -d ' ')
+        MEDIUM=$(grep -E 'AVD-[A-Z]+-[0-9]+ \(MEDIUM\)' "$OUTPUT_FILE" 2>/dev/null | wc -l | tr -d ' ')
+        LOW=$(grep -E 'AVD-[A-Z]+-[0-9]+ \(LOW\)' "$OUTPUT_FILE" 2>/dev/null | wc -l | tr -d ' ')
+    fi
 
     echo -e "  ${RED}CRITICAL:${NC} $CRITICAL"
     echo -e "  ${YELLOW}HIGH:${NC}     $HIGH"
@@ -111,9 +129,12 @@ if [ -f "$OUTPUT_FILE" ]; then
 
     TOTAL=$((CRITICAL + HIGH + MEDIUM + LOW))
     if [ "$TOTAL" -eq 0 ]; then
-        echo -e "${GREEN}No security issues found!${NC}"
+        echo -e "${GREEN}✅ No security issues found!${NC}"
     else
         echo -e "Total findings: ${YELLOW}$TOTAL${NC}"
+        if [ "$CRITICAL" -eq 0 ] && [ "$HIGH" -le 4 ]; then
+            echo -e "${GREEN}✅ CRITICAL vulnerabilities eliminated!${NC}"
+        fi
     fi
 fi
 

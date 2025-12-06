@@ -1,0 +1,41 @@
+
+Report Summary
+
+┌─────────────────┬───────────┬───────────────────┐
+│     Target      │   Type    │ Misconfigurations │
+├─────────────────┼───────────┼───────────────────┤
+│ .               │ terraform │         0         │
+├─────────────────┼───────────┼───────────────────┤
+│ iam-insecure.tf │ terraform │         1         │
+└─────────────────┴───────────┴───────────────────┘
+Legend:
+- '-': Not scanned
+- '0': Clean (no security findings detected)
+
+
+iam-insecure.tf (terraform)
+===========================
+Tests: 1 (SUCCESSES: 0, FAILURES: 1)
+Failures: 1 (LOW: 1, MEDIUM: 0, HIGH: 0, CRITICAL: 0)
+
+AVD-AWS-0143 (LOW): One or more policies are attached directly to a user
+═════════════════════════════════════════════════════════════════════════════
+CIS recommends that you apply IAM policies directly to groups and roles but not users. Assigning privileges at the group or role level reduces the complexity of access management as the number of users grow. Reducing access management complexity might in turn reduce opportunity for a principal to inadvertently receive or retain excessive privileges.
+
+
+See https://avd.aquasec.com/misconfig/avd-aws-0143
+─────────────────────────────────────────────────────────────────────────────
+ iam-insecure.tf:69-77
+─────────────────────────────────────────────────────────────────────────────
+  69 ┌ resource "aws_iam_user" "insecure_user" {
+  70 │   name = "service-account"
+  71 │   path = "/"
+  72 │ 
+  73 │   tags = {
+  74 │     Purpose     = "Service Account"
+  75 │     MFARequired = "true"
+  76 │   }
+  77 └ }
+─────────────────────────────────────────────────────────────────────────────
+
+
